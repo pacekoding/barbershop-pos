@@ -1,6 +1,6 @@
 # Barbershop POS
 
-Aplikasi kasir React + Hono pada Cloudflare Workers. Login ditangani Cloudflare Access (email/OTP), identitas diverifikasi dari JWT Access, dan role aplikasi disimpan di Cloudflare D1.
+Aplikasi kasir React + Hono pada Cloudflare Workers. Login ditangani Cloudflare Access, identitas diverifikasi dari JWT Access, dan role aplikasi disimpan di Cloudflare D1.
 
 ## Role dan keamanan
 
@@ -10,6 +10,14 @@ Aplikasi kasir React + Hono pada Cloudflare Workers. Login ditangani Cloudflare 
 - Backend tidak mempercayai email dari body, `Cf-Access-Authenticated-User-Email`, atau header buatan client. `Cf-Access-Jwt-Assertion` diverifikasi dengan `jose` terhadap JWKS Cloudflare, issuer, audience, signature, dan expiration.
 - Karena `ctx.access` tidak diteruskan dari Static Assets ke Worker, aplikasi ini memverifikasi JWT pada setiap request API terproteksi. Tidak ada ketergantungan pada `ctx.access`.
 - Production bersifat fail-closed: JWT hilang menghasilkan `401`; JWT invalid atau akun tidak aktif/tidak terdaftar ditolak.
+
+## Arsitektur production
+
+- Satu Cloudflare Worker menyajikan React SPA dan Hono API pada `/api/*`.
+- Satu D1 production terikat sebagai `DB`; local development memakai database simulasi terpisah.
+- Cloudflare Access melindungi seluruh Worker, termasuk static assets, API, URL production, dan preview.
+- Nilai production `ENVIRONMENT`, `OWNER_EMAIL`, `TEAM_DOMAIN`, dan `POLICY_AUD` disimpan sebagai Worker secrets, bukan di Git.
+- `.dev.vars` hanya untuk localhost dan sudah diabaikan Git.
 
 ## Setup D1
 
@@ -38,21 +46,52 @@ Aplikasi kasir React + Hono pada Cloudflare Workers. Login ditangani Cloudflare 
    npx wrangler d1 migrations apply barbershop-pos --local
    ```
 
-   Untuk production nanti, setelah konfigurasi diperiksa: `npx wrangler d1 migrations apply barbershop-pos --remote`. Perintah ini tidak dijalankan oleh implementasi ini.
+4. Periksa migration production tanpa mengubah data:
+
+   ```bash
+   npx wrangler d1 migrations list DB --remote
+   ```
+
+5. Setelah target dan daftar migration disetujui secara eksplisit, terapkan:
+
+   ```bash
+   npx wrangler d1 migrations apply DB --remote
+   ```
+
+   Jangan menjalankan reset, `DROP`, atau mengimpor data lokal ke production. Migration `0002` hanya membuat master data awal; tidak ada transaksi dummy.
 
 ## Setup Cloudflare Access
 
-1. Di Cloudflare Zero Trust, buat **Access Application** bertipe Self-hosted untuk hostname aplikasi.
-2. Buat policy `Allow` dengan login email/One-time PIN. Izinkan email owner dan setiap email cashier yang ditambahkan di halaman Pengguna. Menambahkan cashier ke D1 saja tidak membuatnya lolos policy Access.
-3. Catat:
+1. Aktifkan Cloudflare Zero Trust Free. Organisasi baru memakai Cloudflare sebagai identity provider bawaan; tambahkan **One-time PIN** jika cashier tidak memiliki akun Cloudflare.
+2. Setelah Worker pertama dibuat, buka Workers & Pages > `barbershop-pos` > **Access** > **Protect this Worker behind Access**.
+3. Pilih **All traffic**, bukan hanya preview, agar URL production dan seluruh preview ikut terlindungi.
+4. Buat atau gunakan reusable policy `Allow Barbershop POS` dengan action **Allow** dan selector **Emails**. Isi hanya email owner dan cashier yang disetujui. Jangan memakai `Everyone`, seluruh domain email, atau Bypass.
+5. Pilih metode autentikasi yang tersedia. Production saat ini memakai Cloudflare identity provider; One-time PIN dapat ditambahkan untuk login cashier berbasis email. Atur durasi sesi sesuai kebutuhan operasional.
+6. Catat Team domain dan Application Audience (`AUD`) dari Access untuk secret Worker.
+7. Uji satu email yang diizinkan dan satu email yang tidak diizinkan. Periksa Access authentication logs bila login gagal.
+
+Menambahkan cashier memerlukan dua tindakan: owner menambahkan email di halaman **Pengaturan > Pengguna**, lalu admin menambahkan email yang sama ke reusable policy Access. Jika hanya Cloudflare identity provider yang aktif, cashier juga harus menjadi anggota akun Cloudflare; aktifkan One-time PIN untuk menghindari syarat tersebut. Menghapus salah satu akses sudah membuat pengguna tidak dapat memakai aplikasi.
+
+Cloudflare merekomendasikan aplikasi Access yang ditautkan langsung ke Worker agar semua domain dan preview ikut terlindungi. Jangan membuat endpoint API publik atau policy Bypass untuk smoke test.
+
+8. Catat:
    - Team domain, misalnya `my-team.cloudflareaccess.com` → `TEAM_DOMAIN`.
    - Application Audience (`AUD`) → `POLICY_AUD`.
-4. Konfigurasikan variable production melalui dashboard/Wrangler environment (jangan commit nilai sensitif):
+9. Konfigurasikan secret production secara interaktif (jangan menaruh nilainya di command history atau Git):
+
+   ```bash
+   npx wrangler secret put ENVIRONMENT
+   npx wrangler secret put TEAM_DOMAIN
+   npx wrangler secret put POLICY_AUD
+   npx wrangler secret put OWNER_EMAIL
+   ```
+
+   Nilai yang diperlukan:
    - `ENVIRONMENT=production`
    - `TEAM_DOMAIN=my-team.cloudflareaccess.com`
    - `POLICY_AUD=<application-aud-tag>`
    - `OWNER_EMAIL=owner@domain.com`
-5. Jangan set `LOCAL_DEV_AUTH`, `DEV_AUTH_EMAIL`, atau `DEV_AUTH_SECRET` pada deployment.
+10. Jangan set `LOCAL_DEV_AUTH`, `DEV_AUTH_EMAIL`, atau `DEV_AUTH_SECRET` pada deployment.
 
 Saat login pertama, hanya JWT valid dengan email yang sama persis (case-insensitive) dengan `OWNER_EMAIL` yang dapat membuat owner awal. Index D1 memastikan hanya ada satu owner. Pengguna lain tidak otomatis menjadi owner dan tetap ditolak sampai owner menambahnya sebagai cashier.
 
@@ -77,6 +116,58 @@ curl http://localhost:5173/api/auth/me \
 
 Tidak ada password default atau halaman register publik.
 
+## Build, preview, dan deployment
+
+```bash
+npm ci
+npm test
+npm run typecheck
+npm run lint
+npm run build
+npm run preview
+```
+
+Production deployment menggunakan source config `wrangler.jsonc` dan build hasil Cloudflare Vite Plugin:
+
+```bash
+npx wrangler deploy --dry-run
+npm run deploy
+```
+
+Urutan go-live yang aman:
+
+1. Pastikan `npx wrangler whoami` menunjuk akun yang benar.
+2. Pastikan `database_id` dan binding `DB` cocok dengan D1 production.
+3. Tinjau lalu apply migration remote setelah persetujuan.
+4. Deploy Worker dan catat URL `workers.dev` dari output Wrangler.
+5. Segera aktifkan Access untuk **All traffic** dan policy email terbatas.
+6. Set keempat secret production secara interaktif.
+7. Uji unauthenticated request ditahan Access, login owner berhasil, dan cashier tidak dapat membuka laporan/void.
+8. Buat satu transaksi bertanda uji, periksa laporan, lalu void dengan alasan yang jelas.
+9. Download Excel dan buka ketiga worksheet.
+
+`wrangler deploy --dry-run` hanya memeriksa paket build; itu bukan bukti deployment atau konfigurasi Access berhasil.
+
+## Backup dan restore D1
+
+Backup manual remote tersedia melalui:
+
+```bash
+npm run backup:remote
+```
+
+File dibuat sebagai `backups/d1/barbershop-pos_YYYY-MM-DD_HH-MM-SS_WIT.sql`. Folder `backups/` diabaikan Git karena berisi data asli. Backup ini masih manual—belum ada scheduler atau backup otomatis.
+
+Salin backup secara berkala ke lokasi terpisah dari akun Cloudflare, misalnya penyimpanan terenkripsi milik owner. Batasi akses karena file berisi email pengguna dan transaksi.
+
+Restore SQL harus dilakukan hanya setelah insiden dikonfirmasi dan dengan persetujuan eksplisit. Cara paling aman adalah membuat D1 kosong terpisah, lalu:
+
+```bash
+npx wrangler d1 execute NAMA_DB_KOSONG --remote --file backups/d1/NAMA_FILE.sql
+```
+
+Verifikasi jumlah tabel, pengguna, transaksi, dan laporan sebelum mengganti binding production. Jangan mengeksekusi dump penuh ke database production aktif karena dapat bentrok dengan schema/data yang sudah ada. Untuk pemulihan D1 production ke titik waktu tertentu, tinjau dahulu `wrangler d1 time-travel info` dan `wrangler d1 time-travel restore`; restore adalah operasi production yang memerlukan persetujuan tersendiri.
+
 ## API
 
 - `GET /api/auth/me` — user aktif yang sedang login.
@@ -87,6 +178,10 @@ Tidak ada password default atau halaman register publik.
 - `POST /api/services` dan `PATCH /api/services/:id` — owner saja.
 - `GET /api/barbers` — owner membaca semua barber; cashier hanya barber aktif.
 - `POST /api/barbers` dan `PATCH /api/barbers/:id` — owner saja.
+- `POST /api/transactions` — membuat transaksi dengan `Idempotency-Key`.
+- `GET /api/transactions` dan `GET /api/transactions/:id` — riwayat dan detail transaksi.
+- `POST /api/transactions/:id/void` — owner saja, wajib alasan.
+- `GET /api/reports/summary`, `/transactions`, dan `/barbers` — owner saja.
 
 Layanan dan barber tidak memiliki endpoint penghapusan permanen. Gunakan status `active` agar referensi riwayat transaksi tetap aman.
 
@@ -103,4 +198,39 @@ Test mencakup bootstrap/akses owner, penolakan endpoint owner untuk cashier, use
 
 ## Deploy
 
-Deployment sengaja tidak dilakukan pada tahap ini. Setelah binding D1, Access Application, policy, variable production, dan migration remote siap, deployment dapat dilakukan terpisah dengan `npm run deploy`.
+Build dan deploy Worker dengan:
+
+```bash
+npm run deploy
+```
+
+Deployment baru dianggap siap digunakan setelah migration remote selesai, seluruh URL Worker dilindungi Cloudflare Access, dan secret production `ENVIRONMENT`, `OWNER_EMAIL`, `TEAM_DOMAIN`, serta `POLICY_AUD` sudah diatur.
+
+## Operasional owner dan cashier
+
+### Owner
+
+1. Login melalui Cloudflare Access menggunakan metode yang diaktifkan admin (Cloudflare identity provider atau email OTP).
+2. Atur layanan dan barber aktif sebelum kasir mulai bekerja.
+3. Tambahkan email cashier di Pengaturan > Pengguna dan policy Access.
+4. Gunakan Kasir bila perlu, lihat seluruh transaksi, dan void hanya dengan alasan yang dapat diaudit.
+5. Cocokkan dashboard dengan pembayaran tunai/QRIS/transfer dan unduh Excel sesuai periode.
+6. Jalankan backup berkala dan pindahkan hasilnya ke penyimpanan terpisah.
+
+### Cashier
+
+1. Login memakai email yang terdaftar di Access dan aplikasi.
+2. Pilih layanan dan barber aktif, verifikasi metode pembayaran, lalu selesaikan transaksi satu kali.
+3. Jika request timeout, gunakan pemeriksaan status; jangan membuat transaksi baru untuk pembayaran yang sama.
+4. Cashier dapat melihat riwayat tetapi tidak dapat void, mengubah master data, membuka laporan, atau export Excel.
+
+## Troubleshooting
+
+- **`workers.dev` belum aktif:** selesaikan onboarding Workers dan daftarkan subdomain pada dashboard, kemudian deploy ulang.
+- **Login berulang/403 Access:** pastikan email ada pada reusable Allow policy dan OTP/IdP diaktifkan.
+- **API 401 setelah lolos Access:** periksa secret `TEAM_DOMAIN` dan `POLICY_AUD`; audience harus milik aplikasi Access yang melindungi Worker.
+- **API 403 akun belum terdaftar:** owner harus menambahkan email cashier di halaman Pengguna.
+- **Owner awal tidak terbentuk:** `OWNER_EMAIL` harus sama dengan email JWT Access dan tabel belum memiliki owner lain.
+- **D1 table tidak ditemukan:** jalankan `wrangler d1 migrations list DB --remote`; apply hanya setelah daftar migration disetujui.
+- **Export Excel gagal:** pastikan login owner masih aktif, periode valid, browser memiliki memori cukup, dan download tidak diblokir.
+- **Periksa log production:** gunakan Workers Logs/Traces dan Access authentication logs; jangan menampilkan secret atau data pembayaran di tiket dukungan.

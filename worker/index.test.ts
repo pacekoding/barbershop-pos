@@ -63,6 +63,14 @@ describe('authentication and role authorization', () => {
     const db = new FakeD1(); db.add('cashier@example.com', 'Kasir', 'cashier', true)
     expect((await request('/api/users', env(db, 'cashier@example.com'))).status).toBe(403)
   })
+  it('menolak kolom role dan input pengguna yang terlalu panjang', async () => {
+    const db = new FakeD1(); const environment = env(db, 'owner@example.com')
+    await request('/api/auth/me', environment)
+    const roleInjection = await request('/api/users', environment, { method: 'POST', body: JSON.stringify({ name: 'Kasir', email: 'cashier@example.com', role: 'owner' }), headers: { 'Content-Type': 'application/json' } })
+    const longName = await request('/api/users', environment, { method: 'POST', body: JSON.stringify({ name: 'A'.repeat(101), email: 'cashier@example.com' }), headers: { 'Content-Type': 'application/json' } })
+    expect(roleInjection.status).toBe(400)
+    expect(longName.status).toBe(400)
+  })
   it('menolak user inactive', async () => {
     const db = new FakeD1(); db.add('cashier@example.com', 'Kasir', 'cashier', false)
     expect((await request('/api/auth/me', env(db, 'cashier@example.com'))).status).toBe(403)

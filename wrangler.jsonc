@@ -1,20 +1,28 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "barbershop-pos",
-  "main": "./worker/index.ts",
-  "compatibility_date": "2026-11-09",
-  "assets": {
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "barbershop-pos",
-      "migrations_dir": "migrations"
-    }
-  ],
-  "observability": { "enabled": true }
-  // Tambahkan database_id sebelum deployment production; lihat README.
-  // Jangan simpan POLICY_AUD, OWNER_EMAIL, atau secret lokal di repository.
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "barbershop-pos",
+	"main": "./worker/index.ts",
+	"compatibility_date": "2026-11-10",
+	"assets": {
+		"not_found_handling": "single-page-application",
+		"run_worker_first": [
+			"/api/*"
+		]
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "barbershop-pos",
+			"database_id": "03abe908-34eb-4e5a-b5ed-7588a5831cf8",
+			"migrations_dir": "migrations"
+		}
+	],
+	"observability": {
+		"enabled": true,
+		"traces": {
+			"enabled": true,
+			"head_sampling_rate": 0.05
+		}
+	}
+	// Jangan simpan POLICY_AUD, OWNER_EMAIL, atau secret lokal di repository.
 }

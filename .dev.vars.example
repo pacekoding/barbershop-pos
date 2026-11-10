@@ -1,8 +1,7 @@
-# Hanya untuk `npm run dev` di localhost. Jangan gunakan konfigurasi ini saat deploy.
+# Khusus development lokal. File .dev.vars asli tidak boleh di-commit.
 ENVIRONMENT=development
 LOCAL_DEV_AUTH=enabled
 DEV_AUTH_EMAIL=owner@example.com
 OWNER_EMAIL=owner@example.com
 TEAM_DOMAIN=your-team.cloudflareaccess.com
-POLICY_AUD=your-access-application-audience-tag
-
+POLICY_AUD=local-placeholder

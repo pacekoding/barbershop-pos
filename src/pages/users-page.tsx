@@ -30,11 +30,12 @@ export function UsersPage() {
   }, [])
 
   async function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setSaving(true)
-    const form = new FormData(event.currentTarget)
+    event.preventDefault(); setSaving(true); setError(null)
+    const formElement = event.currentTarget
+    const form = new FormData(formElement)
     try {
       await api('/api/users', { method: 'POST', body: JSON.stringify({ name: form.get('name'), email: form.get('email') }) })
-      event.currentTarget.reset(); await load()
+      formElement.reset(); await load()
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Gagal menambah pengguna.') }
     finally { setSaving(false) }
   }
@@ -49,8 +50,8 @@ export function UsersPage() {
     {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
     <Card><CardHeader><CardTitle className="flex items-center gap-2"><UserPlus className="size-5" /> Tambah cashier</CardTitle><CardDescription>Email juga harus ditambahkan ke policy Cloudflare Access agar dapat login.</CardDescription></CardHeader>
       <CardContent><form className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]" onSubmit={create}>
-        <input className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" name="name" placeholder="Nama lengkap" required />
-        <input className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" name="email" type="email" placeholder="email@domain.com" required />
+        <input className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" name="name" placeholder="Nama lengkap" maxLength={100} required />
+        <input className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" name="email" type="email" placeholder="email@domain.com" maxLength={254} required />
         <Button disabled={saving}>{saving ? 'Menyimpan…' : 'Tambah'}</Button>
       </form></CardContent>
     </Card>
