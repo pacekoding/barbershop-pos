@@ -13,7 +13,7 @@
 		{
 			"binding": "DB",
 			"database_name": "barbershop-pos",
-			"database_id": "03abe908-34eb-4e5a-b5ed-7588a5831cf8",
+			"database_id": "b6258cb4-f3c5-4180-a9c3-97b0a6a8622f",
 			"migrations_dir": "migrations"
 		}
 	],
@@ -24,5 +24,5 @@
 			"head_sampling_rate": 0.05
 		}
 	}
-	// Jangan simpan POLICY_AUD, OWNER_EMAIL, atau secret lokal di repository.
+	// Jangan simpan POLICY_AUD, DEVELOPER_EMAIL, atau secret lokal di repository.
 }

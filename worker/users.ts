@@ -47,8 +47,8 @@ users.patch('/:id', async (context) => {
   }
   const existing = await context.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(id).first<Record<string, unknown>>()
   if (!existing) return context.json({ error: 'not_found', message: 'Pengguna tidak ditemukan.' }, 404)
-  if (existing.role === 'owner' && parsed.data.active === false) {
-    return context.json({ error: 'validation_error', message: 'Owner utama tidak dapat dinonaktifkan.' }, 400)
+  if (existing.role === 'developer' && parsed.data.active === false) {
+    return context.json({ error: 'validation_error', message: 'Developer utama tidak dapat dinonaktifkan.' }, 400)
   }
   const name = parsed.data.name ?? String(existing.name)
   const active = parsed.data.active === undefined ? Number(existing.active) : Number(parsed.data.active)

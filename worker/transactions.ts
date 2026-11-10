@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { requireOwner, type AppBindings } from './auth.js'
+import { requireManager, type AppBindings } from './auth.js'
 import { escapeLike, parsePeriod } from './reporting.js'
 
 const paymentMethod = z.enum(['cash', 'qris', 'transfer'], { error: 'Metode pembayaran tidak valid.' })
@@ -249,7 +249,7 @@ transactions.post('/', async (context) => {
   return context.json({ transaction, replayed: false }, 201)
 })
 
-transactions.post('/:id/void', requireOwner, async (context) => {
+transactions.post('/:id/void', requireManager, async (context) => {
   const id = context.req.param('id')
   if (!/^[0-9a-f-]{36}$/i.test(id)) return context.json({ error: 'validation_error', message: 'ID transaksi tidak valid.' }, 400)
   const parsed = voidSchema.safeParse(await context.req.json().catch(() => null))

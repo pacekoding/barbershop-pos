@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Banknote, Check, CheckCircle2, CreditCard, LoaderCircle, QrCode, ReceiptText, RefreshCw, Scissors, UserRound, WifiOff, X } from 'lucide-react'
-import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { PageHeading } from '../components/layout/page-heading'
 import { ApiError, apiRequest } from '../lib/api'
 import { formatRupiah } from '../lib/format'
 import { cn } from '../lib/utils'
@@ -200,38 +200,42 @@ export function KasirPage() {
   if (loading) return <div className="flex min-h-[50vh] items-center justify-center gap-3 text-sm text-muted-foreground"><LoaderCircle className="size-5 animate-spin" /> Menyiapkan kasir…</div>
 
   return (
-    <section className="space-y-5 pb-28 xl:pb-0">
-      <div><Badge>Kasir aktif</Badge><h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">Transaksi baru</h1><p className="mt-1 text-sm text-muted-foreground">Pilih layanan, barber, lalu selesaikan pembayaran.</p></div>
+    <section className="space-y-5 pb-28 md:pb-24 lg:pb-0">
+      <PageHeading eyebrow="Kasir aktif" title="Transaksi baru" description="Pilih layanan dan barber, tinjau pesanan, lalu selesaikan pembayaran." />
 
       {error && <div className={cn('flex items-start gap-3 rounded-xl border p-3 text-sm', uncertain ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-red-200 bg-red-50 text-red-800')}>
         {uncertain ? <WifiOff className="mt-0.5 size-4 shrink-0" /> : <X className="mt-0.5 size-4 shrink-0" />}
         <div className="flex-1"><p>{error}</p>{uncertain && recoveryKey && <Button className="mt-3" size="sm" variant="outline" disabled={checking} onClick={() => void lookupAttempt(recoveryKey)}>{checking ? <LoaderCircle className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} Periksa status transaksi</Button>}</div>
       </div>}
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="space-y-5">
           <Card><CardHeader><CardTitle>1. Pilih layanan</CardTitle><CardDescription>Ketuk satu atau beberapa layanan aktif.</CardDescription></CardHeader><CardContent>
-            {services.length === 0 ? <Empty message="Belum ada layanan aktif." retry={() => void loadCatalog()} /> : <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{services.map((service) => {
+            {services.length === 0 ? <Empty message="Belum ada layanan aktif." retry={() => void loadCatalog()} /> : <div className="grid gap-3 min-[520px]:grid-cols-2 2xl:grid-cols-3">{services.map((service) => {
               const active = selectedIds.includes(service.id)
-              return <button key={service.id} type="button" disabled={submitting || uncertain} onClick={() => toggleService(service.id)} aria-pressed={active} className={cn('relative min-h-28 rounded-2xl border-2 p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60', active ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-white hover:border-primary/35')}><span className={cn('mb-4 flex size-10 items-center justify-center rounded-xl', active ? 'bg-primary text-white' : 'bg-secondary text-primary')}>{active ? <Check className="size-5" /> : <Scissors className="size-5" />}</span><span className="block font-semibold leading-tight">{service.name}</span><span className="mt-1 block text-sm font-medium text-primary">{formatRupiah(service.price)}</span></button>
+              return <button key={service.id} type="button" disabled={submitting || uncertain} onClick={() => toggleService(service.id)} aria-pressed={active} className={cn('relative min-h-28 rounded-2xl border-2 p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60', active ? 'border-accent bg-red-50 shadow-sm' : 'border-border bg-white hover:border-gray-400')}><span className={cn('mb-4 flex size-10 items-center justify-center rounded-xl', active ? 'bg-accent text-white' : 'bg-secondary text-foreground')}>{active ? <Check className="size-5" /> : <Scissors className="size-5" />}</span><span className="block font-bold leading-tight">{service.name}</span><span className={cn('mt-1 block text-sm font-bold', active ? 'text-accent' : 'text-foreground')}>{formatRupiah(service.price)}</span></button>
             })}</div>}
           </CardContent></Card>
 
           <Card><CardHeader><CardTitle>2. Pilih barber</CardTitle><CardDescription>Pilih barber yang mengerjakan layanan.</CardDescription></CardHeader><CardContent>
             {barbers.length === 0 ? <Empty message="Belum ada barber aktif." retry={() => void loadCatalog()} /> : <div className="flex gap-3 overflow-x-auto pb-1">{barbers.map((barber) => {
               const active = barber.id === barberId
-              return <button key={barber.id} type="button" disabled={submitting || uncertain} onClick={() => chooseBarber(barber.id)} aria-pressed={active} className={cn('flex min-w-36 items-center gap-3 rounded-2xl border-2 p-3 text-left transition disabled:opacity-60', active ? 'border-primary bg-primary/5' : 'border-border bg-white')}><span className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', active ? 'bg-primary text-white' : 'bg-secondary text-primary')}><UserRound className="size-5" /></span><span className="font-semibold">{barber.name}</span></button>
+              return <button key={barber.id} type="button" disabled={submitting || uncertain} onClick={() => chooseBarber(barber.id)} aria-pressed={active} className={cn('flex min-h-16 min-w-40 items-center gap-3 rounded-2xl border-2 p-3 text-left transition disabled:opacity-60', active ? 'border-accent bg-red-50' : 'border-border bg-white')}><span className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', active ? 'bg-accent text-white' : 'bg-secondary text-foreground')}><UserRound className="size-5" /></span><span className="font-semibold">{barber.name}</span></button>
             })}</div>}
           </CardContent></Card>
 
-          <Card><CardHeader><CardTitle>3. Pembayaran</CardTitle><CardDescription>Pembayaran QRIS dan transfer dikonfirmasi manual setelah dana diterima.</CardDescription></CardHeader><CardContent className="space-y-4">
+          <div className="lg:hidden"><MobileReview selected={selected} total={total} barber={chosenBarber} /></div>
+
+          <Card><CardHeader><CardTitle>4. Pembayaran</CardTitle><CardDescription>Pembayaran QRIS dan transfer dikonfirmasi manual setelah dana diterima.</CardDescription></CardHeader><CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-2">{paymentOptions.map(({ value, label, icon: Icon }) => <button key={value} type="button" disabled={submitting || uncertain} onClick={() => chooseMethod(value)} className={cn('flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl border-2 text-sm font-semibold transition disabled:opacity-60', method === value ? 'border-primary bg-primary/5 text-primary' : 'border-border bg-white')}><Icon className="size-5" />{label}</button>)}</div>
             {method === 'cash' ? <div className="rounded-2xl bg-muted/60 p-4"><label className="text-sm font-semibold">Uang diterima<input value={cashInput} onChange={(event) => updateCash(event.target.value)} inputMode="numeric" placeholder="0" disabled={submitting || uncertain} className="mt-2 h-12 w-full rounded-xl border bg-white px-4 text-lg font-bold outline-none focus:ring-2 focus:ring-primary/20" /></label><div className="mt-3 flex flex-wrap gap-2">{quickCashAmounts(total).map((amount) => <Button key={amount} type="button" size="sm" variant="outline" disabled={total === 0 || submitting || uncertain} onClick={() => updateCash(String(amount))}>{amount === total ? 'Uang pas' : formatRupiah(amount)}</Button>)}</div><div className="mt-4 flex items-center justify-between border-t pt-3"><span className="text-sm text-muted-foreground">Kembalian</span><strong className="text-lg">{formatRupiah(change)}</strong></div></div> : <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">Pastikan pembayaran {method === 'qris' ? 'QRIS' : 'transfer'} benar-benar sudah masuk sebelum menyelesaikan transaksi.</div>}
           </CardContent></Card>
         </div>
 
-        <Summary selected={selected} total={total} barber={chosenBarber} method={method} ready={ready} disabled={submitting || uncertain} onConfirm={() => { setError(null); setConfirming(true) }} />
+        <div className="hidden lg:block"><Summary selected={selected} total={total} barber={chosenBarber} method={method} ready={ready} disabled={submitting || uncertain} onConfirm={() => { setError(null); setConfirming(true) }} /></div>
       </div>
+
+      <div className="fixed inset-x-3 bottom-[calc(4.7rem+env(safe-area-inset-bottom))] z-30 flex items-center gap-3 rounded-2xl border bg-white p-3 shadow-[0_12px_40px_rgba(0,0,0,.18)] md:bottom-4 md:left-24 md:right-4 lg:hidden"><div className="min-w-0 flex-1"><p className="text-[11px] font-medium text-muted-foreground">{selected.length} layanan · Total</p><p className="truncate text-lg font-extrabold">{formatRupiah(total)}</p></div><Button disabled={!ready || submitting || uncertain} onClick={() => { setError(null); setConfirming(true) }}>Tinjau bayar</Button></div>
 
       {confirming && <Confirmation selected={selected} total={total} barber={chosenBarber!} method={method} cashReceived={cashReceived} change={change} submitting={submitting} close={() => !submitting && setConfirming(false)} finish={() => void finishTransaction()} />}
     </section>
@@ -247,6 +251,10 @@ function paymentLabel(method: PaymentMethod) { return method === 'cash' ? 'Tunai
 
 function Empty({ message, retry }: { message: string; retry: () => void }) {
   return <div className="flex flex-col items-center rounded-xl border border-dashed py-10 text-center"><p className="text-sm text-muted-foreground">{message}</p><Button className="mt-3" size="sm" variant="outline" onClick={retry}><RefreshCw className="size-4" /> Muat ulang</Button></div>
+}
+
+function MobileReview({ selected, total, barber }: { selected: Service[]; total: number; barber: Barber | null }) {
+  return <Card><CardHeader><CardTitle>3. Tinjau pesanan</CardTitle><CardDescription>Pastikan layanan dan barber sudah benar.</CardDescription></CardHeader><CardContent>{selected.length === 0 ? <div className="rounded-xl bg-muted/60 px-4 py-7 text-center text-sm text-muted-foreground">Belum ada layanan dipilih.</div> : <div className="space-y-3">{selected.map((service) => <div key={service.id} className="flex items-start justify-between gap-3 text-sm"><span className="font-semibold">{service.name}</span><span>{formatRupiah(service.price)}</span></div>)}</div>}<div className="my-4 h-px bg-border" /><div className="flex justify-between text-sm"><span className="text-muted-foreground">Barber</span><strong>{barber?.name ?? 'Belum dipilih'}</strong></div><div className="mt-3 flex items-end justify-between"><span className="font-semibold">Total</span><span className="text-2xl font-extrabold">{formatRupiah(total)}</span></div></CardContent></Card>
 }
 
 function Summary({ selected, total, barber, method, ready, disabled, onConfirm }: { selected: Service[]; total: number; barber: Barber | null; method: PaymentMethod; ready: boolean; disabled: boolean; onConfirm: () => void }) {

@@ -1,33 +1,37 @@
-import { LogOut, Scissors } from 'lucide-react'
-import { Outlet } from 'react-router'
+import { LogOut } from 'lucide-react'
+import { Outlet, useLocation } from 'react-router'
 import { Button } from '../ui/button'
 import { BottomNavigation } from './bottom-navigation'
 import { Sidebar } from './sidebar'
 import { useAuth } from '../../lib/auth'
+import { Brand } from './brand'
+
+const pageTitles: Record<string, string> = {
+  '/kasir': 'Kasir', '/transaksi': 'Transaksi', '/laporan': 'Laporan',
+  '/pengaturan/layanan': 'Layanan', '/pengaturan/barber': 'Barber', '/pengaturan/pengguna': 'Pengguna',
+}
 
 export function AppLayout() {
   const { user } = useAuth()
+  const { pathname } = useLocation()
   const initials = user?.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() ?? '—'
   function logout() {
     window.location.assign('/cdn-cgi/access/logout')
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/90 px-4 backdrop-blur sm:px-6 lg:h-20 lg:px-8">
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-white"><Scissors className="size-[18px]" /></div>
-            <div><p className="text-sm font-bold leading-tight">Papuan Paradise</p><p className="text-[11px] text-muted-foreground">Barbershop POS</p></div>
-          </div>
-          <div className="hidden lg:block"><p className="text-sm font-semibold">{user ? `Selamat datang, ${user.name}` : 'Memverifikasi akses…'}</p><p className="text-xs text-muted-foreground">{user ? `${user.role} · ${user.email}` : 'Cloudflare Access'}</p></div>
+      <div className="md:pl-20 xl:pl-60">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-white/95 px-4 backdrop-blur sm:px-6 md:h-18 lg:px-7">
+          <Brand compact className="md:hidden" />
+          <div className="hidden md:block"><p className="text-xs font-medium text-muted-foreground">Papuan Paradise</p><p className="text-base font-bold">{pageTitles[pathname] ?? 'Barbershop POS'}</p></div>
           <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-full bg-secondary text-sm font-bold text-primary">{initials}</div>
-            {user && <Button variant="ghost" size="sm" onClick={logout} aria-label="Keluar dari aplikasi"><LogOut className="size-[18px]" /><span className="hidden sm:inline">Keluar</span></Button>}
+            <div className="flex size-10 items-center justify-center rounded-full bg-primary text-xs font-bold text-white ring-2 ring-white">{initials}</div>
+            {user && <Button className="hidden md:inline-flex" variant="ghost" size="sm" onClick={logout} aria-label="Keluar dari aplikasi"><LogOut className="size-[18px]" /><span className="hidden lg:inline">Keluar</span></Button>}
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8"><Outlet /></main>
+        <main className="mx-auto w-full max-w-[1440px] px-4 pb-28 pt-5 sm:px-6 md:pb-10 md:pt-6 lg:px-7 xl:px-8"><Outlet /></main>
       </div>
       <BottomNavigation />
     </div>

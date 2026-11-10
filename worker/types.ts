@@ -1,4 +1,4 @@
-export type Role = 'owner' | 'cashier'
+export type Role = 'developer' | 'owner' | 'cashier'
 
 export interface AppUser {
   id: number
@@ -14,7 +14,7 @@ export interface AppEnv {
   DB: D1Database
   TEAM_DOMAIN: string
   POLICY_AUD: string
-  OWNER_EMAIL: string
+  DEVELOPER_EMAIL: string
   ENVIRONMENT?: 'development' | 'production' | 'test'
   LOCAL_DEV_AUTH?: string
   DEV_AUTH_SECRET?: string

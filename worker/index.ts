@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { authenticate, requireOwner, type AppBindings } from './auth.js'
+import { authenticate, requireDeveloper, requireManager, type AppBindings } from './auth.js'
 import { users } from './users.js'
 import { barbers, services } from './catalog.js'
 import { transactions } from './transactions.js'
@@ -14,16 +14,16 @@ app.get('/api/health', (context) => context.json({
 }))
 
 app.use('/api/auth/*', authenticate)
-app.use('/api/users', authenticate, requireOwner)
-app.use('/api/users/*', authenticate, requireOwner)
+app.use('/api/users', authenticate, requireDeveloper)
+app.use('/api/users/*', authenticate, requireDeveloper)
 app.use('/api/services', authenticate)
 app.use('/api/services/*', authenticate)
 app.use('/api/barbers', authenticate)
 app.use('/api/barbers/*', authenticate)
 app.use('/api/transactions', authenticate)
 app.use('/api/transactions/*', authenticate)
-app.use('/api/reports', authenticate, requireOwner)
-app.use('/api/reports/*', authenticate, requireOwner)
+app.use('/api/reports', authenticate, requireManager)
+app.use('/api/reports/*', authenticate, requireManager)
 
 app.get('/api/auth/me', (context) => context.json({ user: context.get('user') }))
 app.route('/api/users', users)

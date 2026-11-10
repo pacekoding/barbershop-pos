@@ -57,7 +57,7 @@ class ReportD1 {
 
 function env(db: ReportD1, email = 'owner@example.com'): AppEnv {
   db.user = { id: email === 'owner@example.com' ? 1 : 2, email, name: email === 'owner@example.com' ? 'Owner' : 'Kasir', role: email === 'owner@example.com' ? 'owner' : 'cashier', active: 1 }
-  return { DB: db as unknown as D1Database, TEAM_DOMAIN: 'test.cloudflareaccess.com', POLICY_AUD: 'aud', OWNER_EMAIL: 'owner@example.com', ENVIRONMENT: 'development', LOCAL_DEV_AUTH: 'enabled', DEV_AUTH_EMAIL: email }
+  return { DB: db as unknown as D1Database, TEAM_DOMAIN: 'test.cloudflareaccess.com', POLICY_AUD: 'aud', DEVELOPER_EMAIL: 'developer@example.com', ENVIRONMENT: 'development', LOCAL_DEV_AUTH: 'enabled', DEV_AUTH_EMAIL: email }
 }
 
 describe('reporting period', () => {

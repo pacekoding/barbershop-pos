@@ -16,10 +16,10 @@ export default function App() {
         <Route index element={<Navigate to="/kasir" replace />} />
         <Route path="/kasir" element={<RouteGuard><KasirPage /></RouteGuard>} />
         <Route path="/transaksi" element={<RouteGuard><TransactionsPage /></RouteGuard>} />
-        <Route path="/laporan" element={<RouteGuard roles={['owner']}><ReportsPage /></RouteGuard>} />
-        <Route path="/pengaturan/layanan" element={<RouteGuard roles={['owner']}><ServicesPage /></RouteGuard>} />
-        <Route path="/pengaturan/barber" element={<RouteGuard roles={['owner']}><BarbersPage /></RouteGuard>} />
-        <Route path="/pengaturan/pengguna" element={<RouteGuard roles={['owner']}><UsersPage /></RouteGuard>} />
+        <Route path="/laporan" element={<RouteGuard roles={['developer', 'owner']}><ReportsPage /></RouteGuard>} />
+        <Route path="/pengaturan/layanan" element={<RouteGuard roles={['developer', 'owner']}><ServicesPage /></RouteGuard>} />
+        <Route path="/pengaturan/barber" element={<RouteGuard roles={['developer', 'owner']}><BarbersPage /></RouteGuard>} />
+        <Route path="/pengaturan/pengguna" element={<RouteGuard roles={['developer']}><UsersPage /></RouteGuard>} />
         <Route path="*" element={<Navigate to="/kasir" replace />} />
       </Route>
     </Routes></AuthProvider>

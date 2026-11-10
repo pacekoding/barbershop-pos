@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 
-export type Role = 'owner' | 'cashier'
+export type Role = 'developer' | 'owner' | 'cashier'
 export interface AuthUser { id: number; email: string; name: string; role: Role; active: boolean }
 
 interface AuthState {
