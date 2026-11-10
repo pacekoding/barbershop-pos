@@ -7,5 +7,14 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "barbershop-pos",
+      "migrations_dir": "migrations"
+    }
+  ],
   "observability": { "enabled": true }
+  // Tambahkan database_id sebelum deployment production; lihat README.
+  // Jangan simpan POLICY_AUD, OWNER_EMAIL, atau secret lokal di repository.
 }

@@ -1,6 +1,7 @@
 import { Scissors } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { cn } from '../../lib/utils'
+import { useAuth } from '../../lib/auth'
 import { primaryNavigation, settingsNavigation } from './navigation'
 
 type NavigationItem = (typeof primaryNavigation)[number]
@@ -18,6 +19,9 @@ function NavigationLink({ item }: { item: NavigationItem }) {
 }
 
 export function Sidebar() {
+  const { user } = useAuth()
+  const visiblePrimary = primaryNavigation.filter((item) => user && item.roles.includes(user.role))
+  const visibleSettings = settingsNavigation.filter((item) => user && item.roles.includes(user.role))
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-[#edf1eb] lg:flex lg:flex-col">
       <div className="flex h-20 items-center gap-3 border-b px-6">
@@ -27,14 +31,14 @@ export function Sidebar() {
       <nav className="flex-1 space-y-6 overflow-y-auto p-4" aria-label="Navigasi utama">
         <div className="space-y-1">
           <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Operasional</p>
-          {primaryNavigation.map((item) => <NavigationLink key={item.to} item={item} />)}
+          {visiblePrimary.map((item) => <NavigationLink key={item.to} item={item} />)}
         </div>
-        <div className="space-y-1">
+        {visibleSettings.length > 0 && <div className="space-y-1">
           <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Pengaturan</p>
-          {settingsNavigation.map((item) => <NavigationLink key={item.to} item={item} />)}
-        </div>
+          {visibleSettings.map((item) => <NavigationLink key={item.to} item={item} />)}
+        </div>}
       </nav>
-      <div className="m-4 rounded-xl border bg-white/70 p-3"><p className="text-sm font-semibold">Mode awal</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Database D1 belum diaktifkan.</p></div>
+      {user && <div className="m-4 rounded-xl border bg-white/70 p-3"><p className="text-sm font-semibold">{user.name}</p><p className="mt-1 text-xs capitalize text-muted-foreground">{user.role} · {user.email}</p></div>}
     </aside>
   )
 }

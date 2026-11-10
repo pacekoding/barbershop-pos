@@ -1,21 +1,26 @@
 import { Navigate, Route, Routes } from 'react-router'
+import { RouteGuard } from './components/auth/route-guard'
 import { AppLayout } from './components/layout/app-layout'
+import { AuthProvider } from './lib/auth'
 import { KasirPage } from './pages/kasir-page'
 import { PlaceholderPage } from './pages/placeholder-page'
+import { UsersPage } from './pages/users-page'
+import { ServicesPage } from './pages/services-page'
+import { BarbersPage } from './pages/barbers-page'
 
 export default function App() {
   return (
-    <Routes>
+    <AuthProvider><Routes>
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/kasir" replace />} />
-        <Route path="/kasir" element={<KasirPage />} />
-        <Route path="/transaksi" element={<PlaceholderPage title="Transaksi" description="Riwayat transaksi dan detail pembayaran akan tersedia di sini." />} />
-        <Route path="/laporan" element={<PlaceholderPage title="Laporan" description="Ringkasan omzet dan performa layanan akan tersedia di sini." />} />
-        <Route path="/pengaturan/layanan" element={<PlaceholderPage title="Layanan" description="Kelola nama layanan, durasi, dan harga dalam Rupiah." />} />
-        <Route path="/pengaturan/barber" element={<PlaceholderPage title="Barber" description="Kelola daftar barber dan status ketersediaannya." />} />
-        <Route path="/pengaturan/pengguna" element={<PlaceholderPage title="Pengguna" description="Kelola pengguna dan hak akses aplikasi." />} />
+        <Route path="/kasir" element={<RouteGuard><KasirPage /></RouteGuard>} />
+        <Route path="/transaksi" element={<RouteGuard><PlaceholderPage title="Transaksi" description="Riwayat transaksi dan detail pembayaran akan tersedia di sini." /></RouteGuard>} />
+        <Route path="/laporan" element={<RouteGuard roles={['owner']}><PlaceholderPage title="Laporan" description="Ringkasan omzet dan performa layanan akan tersedia di sini." /></RouteGuard>} />
+        <Route path="/pengaturan/layanan" element={<RouteGuard roles={['owner']}><ServicesPage /></RouteGuard>} />
+        <Route path="/pengaturan/barber" element={<RouteGuard roles={['owner']}><BarbersPage /></RouteGuard>} />
+        <Route path="/pengaturan/pengguna" element={<RouteGuard roles={['owner']}><UsersPage /></RouteGuard>} />
         <Route path="*" element={<Navigate to="/kasir" replace />} />
       </Route>
-    </Routes>
+    </Routes></AuthProvider>
   )
 }
