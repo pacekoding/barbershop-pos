@@ -1,4 +1,4 @@
-import { Bell, Scissors } from 'lucide-react'
+import { LogOut, Scissors } from 'lucide-react'
 import { Outlet } from 'react-router'
 import { Button } from '../ui/button'
 import { BottomNavigation } from './bottom-navigation'
@@ -8,6 +8,10 @@ import { useAuth } from '../../lib/auth'
 export function AppLayout() {
   const { user } = useAuth()
   const initials = user?.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() ?? '—'
+  function logout() {
+    window.location.assign('/cdn-cgi/access/logout')
+  }
+
   return (
     <div className="min-h-screen">
       <Sidebar />
@@ -19,8 +23,8 @@ export function AppLayout() {
           </div>
           <div className="hidden lg:block"><p className="text-sm font-semibold">{user ? `Selamat datang, ${user.name}` : 'Memverifikasi akses…'}</p><p className="text-xs text-muted-foreground">{user ? `${user.role} · ${user.email}` : 'Cloudflare Access'}</p></div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" aria-label="Notifikasi"><Bell className="size-5" /></Button>
             <div className="flex size-9 items-center justify-center rounded-full bg-secondary text-sm font-bold text-primary">{initials}</div>
+            {user && <Button variant="ghost" size="sm" onClick={logout} aria-label="Keluar dari aplikasi"><LogOut className="size-[18px]" /><span className="hidden sm:inline">Keluar</span></Button>}
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8"><Outlet /></main>
