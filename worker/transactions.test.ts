@@ -124,7 +124,7 @@ class TransactionD1 {
 function environment(db: TransactionD1, email = 'owner@example.com'): AppEnv {
   return {
     DB: db as unknown as D1Database,
-    TEAM_DOMAIN: 'test.cloudflareaccess.com', POLICY_AUD: 'aud', OWNER_EMAIL: 'owner@example.com',
+    TEAM_DOMAIN: 'test.cloudflareaccess.com', POLICY_AUD: 'aud', DEVELOPER_EMAIL: 'developer@example.com',
     ENVIRONMENT: 'development', LOCAL_DEV_AUTH: 'enabled', DEV_AUTH_EMAIL: email,
   }
 }

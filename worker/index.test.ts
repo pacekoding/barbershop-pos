@@ -31,11 +31,11 @@ class FakeD1 {
   }
   all(sql: string) { return sql.includes('SELECT * FROM users') ? this.rows : [] }
   run(sql: string, values: unknown[]) {
-    if (sql.includes("SELECT ?, ?, 'owner'") && !this.rows.some((row) => row.role === 'owner')) {
-      this.add(String(values[0]), String(values[1]), 'owner', true)
+    if (sql.includes("SELECT ?, ?, 'developer'") && !this.rows.some((row) => row.role === 'developer')) {
+      this.add(String(values[0]), String(values[1]), 'developer', true)
     }
   }
-  add(email: string, name: string, role: 'owner' | 'cashier', active: boolean) {
+  add(email: string, name: string, role: 'developer' | 'owner' | 'cashier', active: boolean) {
     const now = new Date().toISOString()
     const row = { id: this.rows.length + 1, email, name, role, active: Number(active), created_at: now, updated_at: now }
     this.rows.push(row); return row
@@ -44,27 +44,30 @@ class FakeD1 {
 
 function env(db: FakeD1, email: string): AppEnv {
   return {
-    DB: db as unknown as D1Database, TEAM_DOMAIN: 'example.cloudflareaccess.com', POLICY_AUD: 'aud', OWNER_EMAIL: 'owner@example.com',
+    DB: db as unknown as D1Database, TEAM_DOMAIN: 'example.cloudflareaccess.com', POLICY_AUD: 'aud', DEVELOPER_EMAIL: 'developer@example.com',
     ENVIRONMENT: 'development', LOCAL_DEV_AUTH: 'enabled', DEV_AUTH_EMAIL: email,
   }
 }
 const request = (path: string, environment: AppEnv, init?: RequestInit) => app.request(`http://localhost${path}`, init, environment)
 
 describe('authentication and role authorization', () => {
-  it('bootstrap owner dan mengizinkan seluruh endpoint pengelolaan pengguna', async () => {
-    const db = new FakeD1(); const environment = env(db, 'owner@example.com')
+  it('bootstrap developer dan mengizinkan seluruh endpoint pengelolaan pengguna', async () => {
+    const db = new FakeD1(); const environment = env(db, 'developer@example.com')
     expect((await request('/api/auth/me', environment)).status).toBe(200)
+    await expect((await request('/api/auth/me', environment)).json()).resolves.toMatchObject({ user: { role: 'developer' } })
     expect((await request('/api/users', environment)).status).toBe(200)
     const created = await request('/api/users', environment, { method: 'POST', body: JSON.stringify({ name: 'Kasir', email: 'cashier@example.com' }), headers: { 'Content-Type': 'application/json' } })
     expect(created.status).toBe(201)
     expect((await request('/api/users/2', environment, { method: 'PATCH', body: JSON.stringify({ active: false }), headers: { 'Content-Type': 'application/json' } })).status).toBe(200)
   })
-  it('cashier tidak dapat mengakses endpoint owner', async () => {
+  it('owner dan cashier tidak dapat mengakses endpoint pengguna', async () => {
+    const ownerDb = new FakeD1(); ownerDb.add('owner@example.com', 'Owner', 'owner', true)
+    expect((await request('/api/users', env(ownerDb, 'owner@example.com'))).status).toBe(403)
     const db = new FakeD1(); db.add('cashier@example.com', 'Kasir', 'cashier', true)
     expect((await request('/api/users', env(db, 'cashier@example.com'))).status).toBe(403)
   })
   it('menolak kolom role dan input pengguna yang terlalu panjang', async () => {
-    const db = new FakeD1(); const environment = env(db, 'owner@example.com')
+    const db = new FakeD1(); const environment = env(db, 'developer@example.com')
     await request('/api/auth/me', environment)
     const roleInjection = await request('/api/users', environment, { method: 'POST', body: JSON.stringify({ name: 'Kasir', email: 'cashier@example.com', role: 'owner' }), headers: { 'Content-Type': 'application/json' } })
     const longName = await request('/api/users', environment, { method: 'POST', body: JSON.stringify({ name: 'A'.repeat(101), email: 'cashier@example.com' }), headers: { 'Content-Type': 'application/json' } })
@@ -76,12 +79,12 @@ describe('authentication and role authorization', () => {
     expect((await request('/api/auth/me', env(db, 'cashier@example.com'))).status).toBe(403)
   })
   it('menolak missing JWT di production', async () => {
-    const environment = { ...env(new FakeD1(), 'owner@example.com'), ENVIRONMENT: 'production' as const }
+    const environment = { ...env(new FakeD1(), 'developer@example.com'), ENVIRONMENT: 'production' as const }
     expect((await request('/api/auth/me', environment)).status).toBe(401)
   })
   it('header email palsu tidak memberikan akses', async () => {
-    const environment = { ...env(new FakeD1(), 'owner@example.com'), ENVIRONMENT: 'production' as const }
-    const response = await request('/api/auth/me', environment, { headers: { 'Cf-Access-Authenticated-User-Email': 'owner@example.com', 'X-Dev-Auth-Email': 'owner@example.com' } })
+    const environment = { ...env(new FakeD1(), 'developer@example.com'), ENVIRONMENT: 'production' as const }
+    const response = await request('/api/auth/me', environment, { headers: { 'Cf-Access-Authenticated-User-Email': 'developer@example.com', 'X-Dev-Auth-Email': 'developer@example.com' } })
     expect(response.status).toBe(401)
   })
 })

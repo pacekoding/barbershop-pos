@@ -4,7 +4,7 @@ import { verifyAccessToken } from './auth.js'
 import type { AppEnv } from './types.js'
 
 const baseEnv = {
-  TEAM_DOMAIN: 'example.cloudflareaccess.com', POLICY_AUD: 'expected-audience', OWNER_EMAIL: 'owner@example.com',
+  TEAM_DOMAIN: 'example.cloudflareaccess.com', POLICY_AUD: 'expected-audience', DEVELOPER_EMAIL: 'developer@example.com',
 } as AppEnv
 
 async function fixtureToken(options?: { audience?: string; expiresIn?: string }) {

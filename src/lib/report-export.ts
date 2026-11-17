@@ -8,9 +8,9 @@ export interface ReportExportData {
   barbers: BarberPerformance[]
 }
 
-const brand = '155E4B'
-const lightBrand = 'E8EEE9'
-const border = 'DDE3DF'
+const brand = '111111'
+const lightBrand = 'F3F4F4'
+const border = 'E5E7EB'
 const rupiahFormat = '"Rp" #,##0'
 
 export function sanitizeExcelText(value: string) {

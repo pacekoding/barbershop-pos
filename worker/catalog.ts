@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { requireOwner, type AppBindings } from './auth.js'
+import { requireManager, type AppBindings } from './auth.js'
 
 const name = z.string({ error: 'Nama wajib diisi.' }).trim().min(1, 'Nama wajib diisi.').max(100, 'Nama maksimal 100 karakter.')
 const serviceCreate = z.object({ name, price: z.number({ error: 'Harga harus berupa angka.' }).int('Harga harus berupa bilangan bulat.').positive('Harga harus lebih besar dari 0.').max(2_147_483_647, 'Harga terlalu besar.') }).strict()
@@ -25,20 +25,20 @@ function serializeBarber(row: Record<string, unknown>) {
   return { id: Number(row.id), name: String(row.name), active: Boolean(row.active), createdAt: String(row.created_at), updatedAt: String(row.updated_at) }
 }
 
-function databaseError(context: Parameters<typeof requireOwner>[0], entity: string) {
+function databaseError(context: Parameters<typeof requireManager>[0], entity: string) {
   return context.json({ error: 'conflict', message: `${entity} dengan nama tersebut sudah terdaftar.` }, 409)
 }
 
 export const services = new Hono<AppBindings>()
 
 services.get('/', async (context) => {
-  const owner = context.get('user').role === 'owner'
-  const query = owner ? 'SELECT * FROM services ORDER BY name COLLATE NOCASE' : 'SELECT * FROM services WHERE active = 1 ORDER BY name COLLATE NOCASE'
+  const manager = ['developer', 'owner'].includes(context.get('user').role)
+  const query = manager ? 'SELECT * FROM services ORDER BY name COLLATE NOCASE' : 'SELECT * FROM services WHERE active = 1 ORDER BY name COLLATE NOCASE'
   const result = await context.env.DB.prepare(query).all<Record<string, unknown>>()
   return context.json({ services: result.results.map(serializeService) })
 })
 
-services.post('/', requireOwner, async (context) => {
+services.post('/', requireManager, async (context) => {
   const parsed = serviceCreate.safeParse(await context.req.json().catch(() => null))
   if (!parsed.success) return context.json({ error: 'validation_error', message: validationMessage(parsed) }, 400)
   try {
@@ -48,7 +48,7 @@ services.post('/', requireOwner, async (context) => {
   } catch { return databaseError(context, 'Layanan') }
 })
 
-services.patch('/:id', requireOwner, async (context) => {
+services.patch('/:id', requireManager, async (context) => {
   const id = idFrom(context.req.param('id'))
   if (!id) return context.json({ error: 'validation_error', message: 'ID layanan tidak valid.' }, 400)
   const parsed = serviceUpdate.safeParse(await context.req.json().catch(() => null))
@@ -66,13 +66,13 @@ services.patch('/:id', requireOwner, async (context) => {
 export const barbers = new Hono<AppBindings>()
 
 barbers.get('/', async (context) => {
-  const owner = context.get('user').role === 'owner'
-  const query = owner ? 'SELECT * FROM barbers ORDER BY name COLLATE NOCASE' : 'SELECT * FROM barbers WHERE active = 1 ORDER BY name COLLATE NOCASE'
+  const manager = ['developer', 'owner'].includes(context.get('user').role)
+  const query = manager ? 'SELECT * FROM barbers ORDER BY name COLLATE NOCASE' : 'SELECT * FROM barbers WHERE active = 1 ORDER BY name COLLATE NOCASE'
   const result = await context.env.DB.prepare(query).all<Record<string, unknown>>()
   return context.json({ barbers: result.results.map(serializeBarber) })
 })
 
-barbers.post('/', requireOwner, async (context) => {
+barbers.post('/', requireManager, async (context) => {
   const parsed = barberCreate.safeParse(await context.req.json().catch(() => null))
   if (!parsed.success) return context.json({ error: 'validation_error', message: validationMessage(parsed) }, 400)
   try {
@@ -82,7 +82,7 @@ barbers.post('/', requireOwner, async (context) => {
   } catch { return databaseError(context, 'Barber') }
 })
 
-barbers.patch('/:id', requireOwner, async (context) => {
+barbers.patch('/:id', requireManager, async (context) => {
   const id = idFrom(context.req.param('id'))
   if (!id) return context.json({ error: 'validation_error', message: 'ID barber tidak valid.' }, 400)
   const parsed = barberUpdate.safeParse(await context.req.json().catch(() => null))

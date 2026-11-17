@@ -61,9 +61,9 @@ function mapUser(row: Record<string, unknown>): AppUser {
 
 async function resolveUser(env: AppEnv, identity: AccessIdentity): Promise<AppUser | null> {
   let row = await env.DB.prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE').bind(identity.email).first<Record<string, unknown>>()
-  if (!row && identity.email === env.OWNER_EMAIL?.trim().toLowerCase()) {
+  if (!row && identity.email === env.DEVELOPER_EMAIL?.trim().toLowerCase()) {
     await env.DB.prepare(`INSERT INTO users (email, name, role, active)
-      SELECT ?, ?, 'owner', 1 WHERE NOT EXISTS (SELECT 1 FROM users WHERE role = 'owner')`)
+      SELECT ?, ?, 'developer', 1 WHERE NOT EXISTS (SELECT 1 FROM users WHERE role = 'developer')`)
       .bind(identity.email, identity.email.split('@')[0]).run()
     row = await env.DB.prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE').bind(identity.email).first<Record<string, unknown>>()
   }
@@ -93,9 +93,16 @@ export const authenticate: MiddlewareHandler<AppBindings> = async (context, next
   await next()
 }
 
-export const requireOwner: MiddlewareHandler<AppBindings> = async (context, next) => {
-  if (context.get('user').role !== 'owner') {
-    return context.json({ error: 'forbidden', message: 'Fitur ini hanya dapat diakses owner.' }, 403)
+export const requireManager: MiddlewareHandler<AppBindings> = async (context, next) => {
+  if (!['developer', 'owner'].includes(context.get('user').role)) {
+    return context.json({ error: 'forbidden', message: 'Fitur ini hanya dapat diakses developer atau owner.' }, 403)
+  }
+  await next()
+}
+
+export const requireDeveloper: MiddlewareHandler<AppBindings> = async (context, next) => {
+  if (context.get('user').role !== 'developer') {
+    return context.json({ error: 'forbidden', message: 'Fitur pengguna hanya dapat diakses developer.' }, 403)
   }
   await next()
 }

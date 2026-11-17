@@ -53,7 +53,7 @@ class CatalogD1 {
 }
 
 function environment(db: CatalogD1, email = 'owner@example.com'): AppEnv {
-  return { DB: db as unknown as D1Database, TEAM_DOMAIN: 'test.cloudflareaccess.com', POLICY_AUD: 'aud', OWNER_EMAIL: 'owner@example.com', ENVIRONMENT: 'development', LOCAL_DEV_AUTH: 'enabled', DEV_AUTH_EMAIL: email }
+  return { DB: db as unknown as D1Database, TEAM_DOMAIN: 'test.cloudflareaccess.com', POLICY_AUD: 'aud', DEVELOPER_EMAIL: 'developer@example.com', ENVIRONMENT: 'development', LOCAL_DEV_AUTH: 'enabled', DEV_AUTH_EMAIL: email }
 }
 function request(db: CatalogD1, path: string, method = 'GET', body?: unknown, email?: string) {
   return app.request(`http://localhost${path}`, { method, body: body === undefined ? undefined : JSON.stringify(body), headers: body === undefined ? undefined : { 'Content-Type': 'application/json' } }, environment(db, email))
